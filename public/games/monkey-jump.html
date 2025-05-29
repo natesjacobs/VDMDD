@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monkey Jump</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background: #f0f2f5;
+        }
+        
+        .game-graphics {
+            width: 100%;
+            max-width: 800px;
+            height: 60vh;
+            position: relative;
+            background: #87CEEB;
+            overflow: hidden;
+            border-radius: 20px 20px 0 0;
+            margin-top: 20px;
+        }
+        
+        /* Background image container */
+        .background-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            transition: transform 0.5s ease;
+        }
+        
+        .background-image {
+            width: 100%;
+            height: 1000px;
+            background-size: 100% auto;
+            background-repeat: no-repeat;
+            background-position: top center;
+            /* TODO: Add your base64 background image here */
+            /* background-image: url('data:image/png;base64,YOUR_BASE64_STRING_HERE'); */
+            background-image: url('images/monkey-jump-tree.jpg');
+            background-color: #228b22; /* Fallback color if image fails to load */
+        }
+        
+        /* Debug circles for branch positions */
+        .debug-circle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 3px solid red;
+            border-radius: 50%;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        /* Position circles alternating left and right */
+        .debug-circle:nth-child(odd) {
+            left: 25%;
+            transform: translateX(-50%);
+        }
+        
+        .debug-circle:nth-child(even) {
+            left: 75%;
+            transform: translateX(-50%);
+        }
+        
+        /* Monkey (now a square placeholder) */
+        .monkey {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            /* TODO: Replace with monkey image */
+            /* background-image: url('path/to/your/monkey-image.png'); */
+            /* background-size: contain; */
+            /* background-repeat: no-repeat; */
+            background-color: #8B4513; /* Temporary square for debugging */
+            transition: all 0.5s ease;
+            z-index: 10;
+            transform: translateX(-50%);
+        }
+        
+        /* Question Section */
+        .question-section {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 20px 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .question-container {
+            text-align: center;
+        }
+        
+        .question {
+            font-size: 20px;
+            color: #2e5931;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .hint {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        
+        .answers {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .answer-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+        
+        .answer-btn.yes {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .answer-btn.no {
+            background: #f44336;
+            color: white;
+        }
+        
+        .answer-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+        
+        .answer-btn:active {
+            transform: translateY(0);
+        }
+        
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 200;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .feedback.show {
+            opacity: 1;
+        }
+        
+        .feedback.correct {
+            color: #4CAF50;
+        }
+        
+        .feedback.incorrect {
+            color: #f44336;
+        }
+        
+        .start-screen, .win-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+        
+        .title {
+            font-size: 36px;
+            color: #2e5931;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .start-btn, .play-again-btn {
+            padding: 20px 40px;
+            font-size: 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .start-btn:hover, .play-again-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0,0,0,0.3);
+        }
+        
+        .progress {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 10px;
+            z-index: 20;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        /* Debug info */
+        .debug-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            font-size: 12px;
+            z-index: 150;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Start Screen -->
+    <div class="start-screen" id="startScreen">
+        <h1 class="title">🐵 Monkey's Rainforest Adventure 🌳</h1>
+        <p style="font-size: 20px; margin-bottom: 30px; text-align: center; color: #3b7a57;">
+            Help the monkey climb to the top!<br>
+            Answer questions about the Amazon rainforest!
+        </p>
+        <button class="start-btn" onclick="startGame()">Start Game!</button>
+    </div>
+    
+    <!-- Win Screen -->
+    <div class="win-screen hidden" id="winScreen">
+        <h1 class="title">🎉 You Did It! 🎉</h1>
+        <p style="font-size: 24px; margin-bottom: 30px; color: #3b7a57;">
+            The monkey reached the top! 🍌
+        </p>
+        <button class="play-again-btn" onclick="resetGame()">Play Again!</button>
+    </div>
+    
+    <!-- Game Graphics Section -->
+    <div class="game-graphics">
+        <!-- Background container -->
+        <div class="background-container" id="backgroundContainer">
+            <div class="background-image" id="backgroundImage">
+                <!-- Debug circles showing branch positions -->
+                <div class="debug-circle" style="bottom: 185px;"></div>
+                <div class="debug-circle" style="bottom: 320px;"></div>
+                <div class="debug-circle" style="bottom: 455px;"></div>
+                <div class="debug-circle" style="bottom: 590px;"></div>
+                <div class="debug-circle" style="bottom: 725px;"></div>
+                <div class="debug-circle" style="bottom: 860px;"></div>
+                <div class="debug-circle" style="bottom: 950px;"></div>
+            </div>
+        </div>
+        
+        <!-- Monkey -->
+        <div class="monkey" id="monkey"></div>
+        
+        <!-- Progress -->
+        <div class="progress hidden" id="progress">
+            Level: <span id="currentBranch">0</span> / <span id="totalBranches">7</span>
+        </div>
+        
+        <!-- Debug Info -->
+        <div class="debug-info" id="debugInfo">
+            Background Y: <span id="bgY">0</span>px<br>
+            Monkey Bottom: <span id="monkeyBottom">0</span>px<br>
+            Monkey Left: <span id="monkeyLeft">0</span>%
+        </div>
+    </div>
+    
+    <!-- Question Section -->
+    <div class="question-section hidden" id="questionSection">
+        <div class="question-container" id="questionContainer">
+            <div class="question" id="questionText"></div>
+            <div class="hint hidden" id="hintText"></div>
+            <div class="answers">
+                <button class="answer-btn yes" onclick="checkAnswer(true)">Yes</button>
+                <button class="answer-btn no" onclick="checkAnswer(false)">No</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Feedback -->
+    <div class="feedback" id="feedback"></div>
+    
+    <script>
+        // Game variables
+        let currentBranch = 0;
+        const totalBranches = 7;
+        let isAnswering = false;
+        
+        // Branch positions from bottom (in pixels) - evenly spaced across 1000px
+        const branchPositions = [
+            50,   // Ground level
+            185,  // Branch 1
+            320,  // Branch 2  
+            455,  // Branch 3
+            590,  // Branch 4
+            725,  // Branch 5
+            860,  // Branch 6
+            950   // Branch 7 - near top
+        ];
+        
+        // Questions about the Amazon rainforest (3rd-4th grade level)
+        const questions = [
+            { 
+                text: "The Amazon rainforest produces about 20% of the world's oxygen.", 
+                answer: true,
+                hint: "Look up: Does the Amazon rainforest produce oxygen?"
+            },
+            { 
+                text: "The Amazon River is the longest river in the world.", 
+                answer: false,
+                hint: "Look up: What is the longest river in the world?"
+            },
+            { 
+                text: "A single tree in the Amazon can be home to more species of ants than all of the United Kingdom.", 
+                answer: true,
+                hint: "Look up: How many ant species live in one Amazon tree?"
+            },
+            { 
+                text: "The Amazon rainforest covers parts of 9 different countries.", 
+                answer: true,
+                hint: "Look up: How many countries contain the Amazon rainforest?"
+            },
+            { 
+                text: "All poison dart frogs in the Amazon are deadly to humans.", 
+                answer: false,
+                hint: "Look up: Are all poison dart frogs dangerous to humans?"
+            },
+            { 
+                text: "The Amazon basin contains about 10% of all species on Earth.", 
+                answer: true,
+                hint: "Look up: What percentage of Earth's species live in the Amazon?"
+            },
+            { 
+                text: "Jaguars can bite through turtle shells and caiman skulls.", 
+                answer: true,
+                hint: "Look up: How strong is a jaguar's bite?"
+            },
+            { 
+                text: "The Amazon rainforest is about 5.5 million square kilometers in size.", 
+                answer: true,
+                hint: "Look up: How big is the Amazon rainforest in square kilometers?"
+            },
+            { 
+                text: "Giant otters in the Amazon can grow up to 6 feet long.", 
+                answer: true,
+                hint: "Look up: How long do giant otters grow?"
+            },
+            { 
+                text: "The Amazon River flows from east to west.", 
+                answer: false,
+                hint: "Look up: Which direction does the Amazon River flow?"
+            },
+            { 
+                text: "Some trees in the Amazon can grow over 200 feet tall.", 
+                answer: true,
+                hint: "Look up: How tall do emergent layer trees grow in the Amazon?"
+            },
+            { 
+                text: "The Madre de Dios region is located in Peru.", 
+                answer: true,
+                hint: "Look up: In which country is Madre de Dios located?"
+            },
+            { 
+                text: "Leafcutter ants eat the leaves they cut.", 
+                answer: false,
+                hint: "Look up: What do leafcutter ants do with the leaves they cut?"
+            },
+            { 
+                text: "The Amazon rainforest is older than 10 million years.", 
+                answer: true,
+                hint: "Look up: How old is the Amazon rainforest?"
+            },
+            { 
+                text: "Capybaras are the world's largest rodents.", 
+                answer: true,
+                hint: "Look up: What is the world's largest rodent?"
+            },
+            { 
+                text: "The canopy layer of the rainforest gets more sunlight than the forest floor.", 
+                answer: true,
+                hint: "Look up: Which rainforest layer gets the most sunlight?"
+            },
+            { 
+                text: "Pink river dolphins are born pink.", 
+                answer: false,
+                hint: "Look up: What color are baby Amazon river dolphins?"
+            },
+            { 
+                text: "The Amazon has more than 3,000 species of fish.", 
+                answer: true,
+                hint: "Look up: How many fish species live in the Amazon River?"
+            },
+            { 
+                text: "Harpy eagles can carry prey that weighs as much as they do.", 
+                answer: true,
+                hint: "Look up: How much can a harpy eagle carry?"
+            },
+            { 
+                text: "Brazil nut trees depend on a specific bee for pollination.", 
+                answer: true,
+                hint: "Look up: What pollinates Brazil nut trees?"
+            },
+            { 
+                text: "The Amazon rainforest gets less than 60 inches of rain per year.", 
+                answer: false,
+                hint: "Look up: How much rain does the Amazon get annually?"
+            },
+            { 
+                text: "Some indigenous tribes in the Amazon have never had contact with the outside world.", 
+                answer: true,
+                hint: "Look up: Are there uncontacted tribes in the Amazon?"
+            },
+            { 
+                text: "Piranhas are the most dangerous animals in Amazon rivers.", 
+                answer: false,
+                hint: "Look up: What is the most dangerous animal in Amazon rivers?"
+            },
+            { 
+                text: "The forest floor of the Amazon is very dark because little sunlight reaches it.", 
+                answer: true,
+                hint: "Look up: How much sunlight reaches the Amazon forest floor?"
+            },
+            { 
+                text: "Sloths only come down from trees once a week.", 
+                answer: true,
+                hint: "Look up: How often do sloths come down from trees?"
+            }
+        ];
+        
+        let currentQuestions = [];
+        
+        // Initialize game
+        function initGame() {
+            positionMonkey(0);
+            shuffleQuestions();
+            updateDebugInfo();
+        }
+        
+        // Position monkey and adjust background
+        function positionMonkey(branchIndex) {
+            const monkey = document.getElementById('monkey');
+            const backgroundContainer = document.getElementById('backgroundContainer');
+            const gameGraphics = document.querySelector('.game-graphics');
+            const gameHeight = gameGraphics.offsetHeight;
+            
+            // Keep monkey at a fixed vertical position (middle of screen)
+            const monkeyFixedBottom = gameHeight / 2 - 30; // 30 is half the monkey height
+            let monkeyLeft, bgOffset;
+            
+            if (branchIndex === 0) {
+                // Ground position
+                monkeyLeft = 50; // Center
+                bgOffset = 0; // Background at starting position
+            } else {
+                // Alternate left and right
+                monkeyLeft = (branchIndex % 2 === 1) ? 25 : 75;
+                
+                // Move background DOWN (positive values) as monkey goes UP
+                // This creates the illusion of climbing
+                bgOffset = branchPositions[branchIndex - 1] - branchPositions[0];
+                
+                // Make sure we don't scroll past the top of the visible area
+                const maxOffset = 1000 - gameHeight;
+                bgOffset = Math.min(bgOffset, maxOffset);
+            }
+            
+            // Apply positions
+            monkey.style.bottom = monkeyFixedBottom + 'px';
+            monkey.style.left = monkeyLeft + '%';
+            backgroundContainer.style.transform = `translateY(${bgOffset}px)`;
+            
+            // Update progress
+            document.getElementById('currentBranch').textContent = branchIndex;
+            
+            // Update debug info
+            updateDebugInfo();
+        }
+        
+        // Update debug info
+        function updateDebugInfo() {
+            const monkey = document.getElementById('monkey');
+            const backgroundContainer = document.getElementById('backgroundContainer');
+            const transform = backgroundContainer.style.transform;
+            const bgY = transform ? parseInt(transform.match(/-?\d+/)[0]) : 0;
+            
+            document.getElementById('bgY').textContent = bgY;
+            document.getElementById('monkeyBottom').textContent = parseInt(monkey.style.bottom) || 0;
+            document.getElementById('monkeyLeft').textContent = monkey.style.left || '50%';
+        }
+        
+        // Shuffle questions
+        function shuffleQuestions() {
+            currentQuestions = [...questions].sort(() => Math.random() - 0.5);
+        }
+        
+        // Start game
+        function startGame() {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('questionSection').classList.remove('hidden');
+            document.getElementById('progress').classList.remove('hidden');
+            currentBranch = 0;
+            positionMonkey(0);
+            showQuestion();
+        }
+        
+        // Show question
+        function showQuestion() {
+            if (currentQuestions.length === 0) {
+                shuffleQuestions();
+            }
+            
+            const question = currentQuestions.pop();
+            document.getElementById('questionText').textContent = question.text;
+            document.getElementById('questionText').dataset.answer = question.answer;
+            
+            // Show hint if available
+            const hintElement = document.getElementById('hintText');
+            if (question.hint) {
+                hintElement.textContent = question.hint;
+                hintElement.classList.remove('hidden');
+            } else {
+                hintElement.classList.add('hidden');
+            }
+            
+            isAnswering = true;
+        }
+        
+        // Check answer
+        function checkAnswer(answer) {
+            if (!isAnswering) return;
+            isAnswering = false;
+            
+            const correctAnswer = document.getElementById('questionText').dataset.answer === 'true';
+            const feedback = document.getElementById('feedback');
+            
+            if (answer === correctAnswer) {
+                // Correct answer
+                feedback.textContent = '✅ Correct!';
+                feedback.className = 'feedback correct show';
+                currentBranch++;
+                
+                setTimeout(() => {
+                    positionMonkey(currentBranch);
+                    feedback.classList.remove('show');
+                    
+                    if (currentBranch > totalBranches) {
+                        // Win!
+                        setTimeout(winGame, 500);
+                    } else {
+                        setTimeout(showQuestion, 500);
+                    }
+                }, 1500);
+            } else {
+                // Wrong answer
+                feedback.textContent = '❌ Try again!';
+                feedback.className = 'feedback incorrect show';
+                
+                setTimeout(() => {
+                    // Reset to ground
+                    currentBranch = 0;
+                    positionMonkey(0);
+                    feedback.classList.remove('show');
+                    setTimeout(showQuestion, 1000);
+                }, 1500);
+            }
+        }
+        
+        // Win game
+        function winGame() {
+            document.getElementById('questionSection').classList.add('hidden');
+            document.getElementById('winScreen').classList.remove('hidden');
+            
+            // Celebration effect
+            createConfetti();
+
+            // Notify parent dashboard of successful completion
+            notifyGameCompletion(true);
+        }
+
+        // Function to notify parent dashboard of game completion
+        function notifyGameCompletion(completed, score = null, timeElapsed = null) {
+            const message = {
+                type: 'gameCompletion',
+                completed: completed, // true if game was successfully completed, false otherwise
+            };
+            
+            // Send message to parent dashboard
+            window.parent.postMessage(message, '*');
+        }
+        
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['#FFD700', '#FFA500', '#FF6347', '#00CED1', '#32CD32'];
+            const gameGraphics = document.querySelector('.game-graphics');
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.position = 'absolute';
+                    confetti.style.width = '10px';
+                    confetti.style.height = '10px';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = '-10px';
+                    confetti.style.borderRadius = '50%';
+                    confetti.style.zIndex = '200';
+                    gameGraphics.appendChild(confetti);
+                    
+                    // Animate falling
+                    let pos = -10;
+                    const fall = setInterval(() => {
+                        pos += 3;
+                        confetti.style.top = pos + 'px';
+                        confetti.style.transform = `translateX(${Math.sin(pos / 30) * 20}px)`;
+                        
+                        if (pos > gameGraphics.offsetHeight) {
+                            clearInterval(fall);
+                            confetti.remove();
+                        }
+                    }, 20);
+                }, i * 50);
+            }
+        }
+        
+        // Reset game
+        function resetGame() {
+            document.getElementById('winScreen').classList.add('hidden');
+            currentBranch = 0;
+            positionMonkey(0);
+            shuffleQuestions();
+            startGame();
+        }
+        
+        // Initialize game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
