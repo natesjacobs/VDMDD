@@ -51,6 +51,13 @@
             color: #90ee90;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
         }
+
+        .credits {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #a0d0a0;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -59,7 +66,11 @@
         <canvas id="gameCanvas" width="600" height="600"></canvas>
         <div class="instructions">
             Use arrow keys to navigate the jungle maze!<br>
-            🐒 Help the monkey find the banana! 🍌
+            🐒 Help the monkey find the banana! 🍌<br>
+            Press 'R' to reset the maze
+        </div>
+        <div class="credits">
+            Designed, built, and tested by <b>Your Name Here</b>
         </div>
         <div id="winMessage" class="win-message" style="display: none;">
             🎉 The monkey got the banana! Delicious! 🍌🐒
@@ -69,6 +80,11 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+
+        // Game state variables
+        let gameStartTime = null;
+        let gameWon = false;
+        let gameCompleted = false; // Track if we've already sent completion message
 
         // Maze configuration
         const CELL_SIZE = 20;
@@ -88,7 +104,6 @@
         let maze = [];
         let player = { x: 1, y: 1 };
         let exit = { x: MAZE_WIDTH - 2, y: MAZE_HEIGHT - 3 };
-        let gameWon = false;
 
         // Initialize maze with walls
         function initMaze() {
@@ -235,16 +250,47 @@
 
                 // Check if monkey reached the banana
                 if (player.x === exit.x && player.y === exit.y) {
-                    gameWon = true;
-                    document.getElementById('winMessage').style.display = 'block';
+                    winGame();
                 }
 
                 drawMaze();
             }
         }
 
+        // Handle game completion
+        function winGame() {
+            if (gameCompleted) return; // Prevent multiple completion messages
+            
+            gameWon = true;
+            gameCompleted = true;
+            
+            // Calculate completion time
+            const gameEndTime = Date.now();
+            const timeElapsed = gameStartTime ? Math.round((gameEndTime - gameStartTime) / 1000) : null;
+            
+            // Show win message
+            document.getElementById('winMessage').style.display = 'block';
+            
+            // Notify parent window of game completion (for level1.html)
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'gameCompletion',
+                    completed: true,
+                    score: null, // Maze doesn't have a score system
+                    timeElapsed: timeElapsed
+                }, '*');
+            }
+            
+            console.log('🎉 Jungle Maze completed!', { timeElapsed });
+        }
+
         // Handle keyboard input
         document.addEventListener('keydown', (event) => {
+            // Start timing on first move
+            if (!gameStartTime && !gameWon) {
+                gameStartTime = Date.now();
+            }
+
             switch (event.key) {
                 case 'ArrowUp':
                     event.preventDefault();
@@ -273,6 +319,8 @@
         function resetGame() {
             player = { x: 1, y: 1 };
             gameWon = false;
+            gameCompleted = false;
+            gameStartTime = null;
             document.getElementById('winMessage').style.display = 'none';
             initMaze();
             generateMaze();
