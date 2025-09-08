@@ -32,10 +32,10 @@
             width: 100%;
             height: 100vh; /* Use viewport height */
             overflow: hidden;
-            background: #1a3d1a; /* Fallback solid color */
-            background: -webkit-linear-gradient(top, #1a3d1a 0%, #0d260d 100%); /* Safari/Chrome */
-            background: -moz-linear-gradient(top, #1a3d1a 0%, #0d260d 100%); /* Firefox */
-            background: linear-gradient(to bottom, #1a3d1a 0%, #0d260d 100%);
+            background: #2e5c2e; /* Fallback solid color */
+            background: -webkit-linear-gradient(top, #2e5c2e 0%, #1f3f1f 100%); /* Safari/Chrome */
+            background: -moz-linear-gradient(top, #2e5c2e 0%, #1f3f1f 100%); /* Firefox */
+            background: linear-gradient(to bottom, #2e5c2e 0%, #1f3f1f 100%);
         }
         
         .bird {
@@ -46,17 +46,20 @@
             top: 50%;
             transform: translate(-50%, -50%);
             z-index: 100;
-            transition: all 0.1s ease;
+            /* Remove transition on position to prevent trails */
+            transition: opacity 0.5s ease;
+            /* Remove border-radius to eliminate any circular styling */
+            /* Force hardware acceleration for smoother rendering */
+            will-change: transform;
+            backface-visibility: hidden;
         }
         
-        /* Bird direction styles - using image files */
+        /* Bird direction styles - ONLY the image, no other UI elements */
         .bird.left {
             background-image: url('../images/toucan-fly-bird-left.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            width: 80px;
-            height: 80px;
         }
         
         .bird.right {
@@ -64,8 +67,6 @@
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            width: 80px;
-            height: 80px;
         }
         
         .obstacle {
@@ -92,32 +93,33 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(255, 255, 255, 0.95); /* Changed to white with slight transparency */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            color: #333; /* Changed to dark gray text */
             z-index: 200;
         }
         
         .hidden {
-            display: none;
+            display: none !important;
         }
         
         h1 {
             font-size: 48px;
             margin-bottom: 20px;
             text-align: center;
-            color: #FFD700;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: #2e5c2e; /* Changed to match the green theme but darker */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2); /* Reduced shadow opacity */
         }
-        
+
         p {
             font-size: 24px;
             margin-bottom: 30px;
             text-align: center;
             line-height: 1.4;
+            color: #333; /* Ensure paragraph text is dark */
         }
         
         button {
@@ -180,6 +182,8 @@
                 Help the toucan fly home to the tree!<br>
                 Dodge the fruit thrown by mischievous monkeys!<br>
                 Use arrow keys to fly safely through the jungle.
+                <br><br>
+                Designed, built, and tested by <b>Declan J</b>
             </p>
             <button onclick="startGame()">Start Flying!</button>
         </div>
@@ -204,8 +208,8 @@
             <button onclick="restartGame()">Play Again</button>
         </div>
         
-        <!-- Bird -->
-        <div class="bird right hidden" id="bird"></div>
+        <!-- Bird - Initially visible but positioned off-screen until game starts -->
+        <div class="bird right" id="bird" style="opacity: 0;"></div>
         
         <!-- Controls -->
         <div class="controls hidden" id="controls">
@@ -229,6 +233,7 @@
         let tree = null;
         let birdDirection = 'right'; // 'left' or 'right' only - no neutral state
         let gameTime = 0; // Track game time in frames (60fps)
+        let imagesLoaded = false;
         
         // Game constants
         const BIRD_SPEED = 1; // Reduced from 2 to 1 for finer movement (2x spatial resolution)
@@ -265,26 +270,90 @@
             keys[e.key] = false;
         });
         
+        // Preload images function
+        function preloadImages() {
+            return new Promise((resolve) => {
+                const imagesToLoad = [
+                    '../images/toucan-fly-bird-left.png',
+                    '../images/toucan-fly-bird-right.png'
+                ];
+                
+                let loadedCount = 0;
+                const totalImages = imagesToLoad.length;
+                
+                function imageLoaded() {
+                    loadedCount++;
+                    if (loadedCount === totalImages) {
+                        imagesLoaded = true;
+                        resolve();
+                    }
+                }
+                
+                function imageError() {
+                    console.warn('Bird image failed to load, using fallback');
+                    imageLoaded(); // Continue anyway
+                }
+                
+                imagesToLoad.forEach(src => {
+                    const img = new Image();
+                    img.onload = imageLoaded;
+                    img.onerror = imageError;
+                    img.src = src;
+                });
+                
+                // Fallback timeout in case images take too long
+                setTimeout(() => {
+                    if (!imagesLoaded) {
+                        console.warn('Image loading timeout, proceeding with fallbacks');
+                        imagesLoaded = true;
+                        resolve();
+                    }
+                }, 2000);
+            });
+        }
+        
+        // Initialize bird position and appearance
+        function initializeBird() {
+            // Reset bird position to center
+            birdX = 50;
+            birdY = 50;
+            birdDirection = 'right';
+            
+            // Update bird appearance and position
+            updateBirdAppearance();
+            updateBirdPosition();
+            
+            // Make bird visible with a fade-in effect
+            bird.style.opacity = '1';
+            bird.style.transition = 'opacity 0.5s ease, all 0.1s ease';
+        }
+        
+        // Update bird position on screen
+        function updateBirdPosition() {
+            // Use transform instead of changing left/top for smoother animation
+            bird.style.transform = `translate(${birdX - 50}vw, ${birdY - 50}vh) translate(-50%, -50%)`;
+        }
+        
         // Start game
         function startGame() {
             gameRunning = true;
-            birdX = 50;
-            birdY = 50;
-            birdDirection = 'right'; // Start with right-pointing bird
+            
+            // Initialize bird
+            initializeBird();
+            
+            // Reset game state
             obstacles = [];
             distance = 0;
             gameTime = 0; // Reset game time
             treeSpawned = false;
             tree = null;
             
+            // Show/hide UI elements
             startScreen.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
             winScreen.classList.add('hidden');
             bird.classList.remove('hidden');
             controlsElement.classList.remove('hidden');
-            
-            // IMPORTANT: Set bird appearance immediately when game starts
-            updateBirdAppearance();
             
             gameLoop();
         }
@@ -347,7 +416,7 @@
             // Note: We no longer change direction when no keys are pressed
             // The bird keeps its last direction
             
-            // Vertical movement with constraints (middle 40% of screen)
+            // Vertical movement with constraints
             if (keys['ArrowUp'] || keys['w'] || keys['W']) {
                 birdY = Math.max(MIN_BIRD_Y, birdY - BIRD_SPEED);
             }
@@ -361,8 +430,7 @@
             }
             
             // Update bird position
-            bird.style.left = birdX + '%';
-            bird.style.top = birdY + '%';
+            updateBirdPosition();
         }
         
         // Update bird appearance based on direction
@@ -487,7 +555,6 @@
             }
         }
         
-        
         // Game over
         function gameOver() {
             gameRunning = false;
@@ -497,7 +564,7 @@
             
             setTimeout(() => {
                 ouchPopup.classList.remove('show');
-                bird.classList.add('hidden');
+                bird.style.opacity = '0';
                 controlsElement.classList.add('hidden');
                 gameOverScreen.classList.remove('hidden');
             }, 1500);
@@ -506,14 +573,30 @@
         // Win game
         function winGame() {
             gameRunning = false;
-            bird.classList.add('hidden');
+            bird.style.opacity = '0';
             controlsElement.classList.add('hidden');
             winScreen.classList.remove('hidden');
+            // Notify parent if embedded
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'gameCompletion',
+                    completed: true
+                }, '*');
+            }
         }
         
-        // Initialize game
-        window.addEventListener('load', () => {
-            // Game is ready
+        // Initialize game when page loads
+        window.addEventListener('load', async () => {
+            // Preload images first
+            await preloadImages();
+            
+            // Initialize bird position and appearance
+            initializeBird();
+            
+            // Make sure bird is hidden until game starts
+            bird.style.opacity = '0';
+            
+            console.log('Game initialized, images loaded:', imagesLoaded);
         });
     </script>
 </body>

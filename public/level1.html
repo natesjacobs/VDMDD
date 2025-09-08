@@ -20,6 +20,7 @@
         .container {
             display: flex;
             height: 100vh;
+            position: relative;
         }
         
         /* Left side - Image section */
@@ -35,6 +36,19 @@
             background-image: url('images/level1-background.jpg');
             background-size: cover;
             background-position: center;
+        }
+        
+        /* Divider element */
+        .divider {
+            position: absolute;
+            width: 25px;
+            height: 100%;
+            background-color: #faf6f0;
+            left: 50%;
+            transform: translateX(-25px);
+            border-radius: 25px 0 0 25px;
+            box-shadow: -5px 0 20px rgba(255, 255, 255, 0.3);
+            z-index: 10;
         }
         
         /* Right side - Games section */
@@ -73,6 +87,8 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
+            background-color: #2e5931;
+            padding: 20px;
         }
         
         .game-button:hover {
@@ -83,6 +99,18 @@
         .game-button:active {
             transform: translateY(-2px);
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Logo image for uncompleted games */
+        .game-button img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Completed game button */
+        .game-button.completed {
+            padding: 0;
         }
         
         /* Footer section */
@@ -99,7 +127,14 @@
             margin: 5px 0;
         }
         
-        .contact-button {
+        .footer-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .contact-button, .video-button {
             background-color: #3b7a57;
             color: white;
             border: none;
@@ -107,11 +142,13 @@
             border-radius: 20px;
             font-size: 12px;
             cursor: pointer;
-            margin-top: 10px;
             transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         
-        .contact-button:hover {
+        .contact-button:hover, .video-button:hover {
             background-color: #2e5931;
         }
         
@@ -279,6 +316,82 @@
             background-color: #2e5931;
         }
         
+        /* Video modal styles */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .video-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            background-color: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+            transform: translate(-50%, -50%);
+        }
+        
+        .video-modal-header {
+            padding: 15px 20px;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .video-modal-title {
+            color: white;
+            font-size: 18px;
+        }
+        
+        .video-close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .video-close-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -289,6 +402,10 @@
             .right-section {
                 width: 100%;
                 height: 50%;
+            }
+            
+            .divider {
+                display: none;
             }
             
             .games-grid {
@@ -306,6 +423,21 @@
                 max-width: 350px;
                 margin-left: -175px; /* Adjusted for mobile */
             }
+            
+            .video-modal-content {
+                width: 95%;
+                max-width: 600px;
+            }
+            
+            .footer-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .contact-button, .video-button {
+                width: 150px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -316,6 +448,9 @@
             <!-- Image will be displayed as background -->
         </div>
         
+        <!-- Divider element -->
+        <div class="divider"></div>
+        
         <!-- Right section with games -->
         <div class="right-section">
             <div class="games-grid" id="gamesGrid">
@@ -323,9 +458,11 @@
             </div>
             
             <div class="footer">
-                <p>© 2024 Jungle Games. All rights reserved.</p>
-                <p>Created with ❤️ by Mrs Welden's first grade class, for all forest lovers.</p>
-                <button class="contact-button" onclick="showContactModal()">Contact</button>
+                <p>Created with ❤️ by Mrs Welden's first grade class, for all young forest lovers.</p>
+                <div class="footer-buttons">
+                    <button class="contact-button" onclick="showContactModal()">Contact</button>
+                    <a href="#" onclick="showVideoModal(); return false;" style="text-decoration: none; font-size: 20px; cursor: pointer;">📺</a>
+                </div>
             </div>
         </div>
     </div>
@@ -358,12 +495,39 @@
         </div>
     </div>
     
+    <!-- Video Modal -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-modal-content">
+            <div class="video-modal-header">
+                <h3 class="video-modal-title">Forest Adventure Videos</h3>
+                <button class="video-close-button" onclick="closeVideoModal()">&times;</button>
+            </div>
+            <div class="video-container">
+                <iframe 
+                    id="youtubePlayer"
+                    src="" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </div>
+    
     <script>
-        // Game data with jungle themes - files in games/ subdirectory
+        // Game data with jungle themes - 18 total games
         const games = [
             { id: 1, name: 'Toucan Fly', emoji: '🦜', color: '#FF6347', file: 'games/toucan-fly.html' },
             { id: 2, name: 'Monkey Jump', emoji: '🐒', color: '#8B4513', file: 'games/monkey-jump.html' },
-            // { id: 3, name: 'Confetti Party', emoji: '🎉', color: '#FFD700', file: 'games/confetti-explosion.html' }
+            { id: 3, name: 'Snake vs Frog', emoji: '🐸', color: '#FFD700', file: 'games/snake-v-frog.html' },
+            { id: 4, name: 'Crocodile Lunch', emoji: '🐊', color: '#00CED1', file: 'games/crocodile-lunch.html' },
+            { id: 5, name: 'Jaguar Rain', emoji: '🐆', color: '#228B22', file: 'games/jaguar-rain.html' },
+            { id: 6, name: 'Jungle Search', emoji: '🌳', color: '#9370DB', file: 'games/jungle-search.html' },
+            { id: 7, name: 'Snake Dinner', emoji: '🐍', color: '#32CD32', file: 'games/snake-dinner.html' },
+            { id: 8, name: 'Llama Escape', emoji: '🦙', color: '#3FBB89', file: 'games/llama-escape.html' },
+            { id: 18, name: 'Create Your Own Game!', emoji: '', color: '#8B7355', file: 'games/blank.html' }
         ];
         
         // Generate game buttons
@@ -373,10 +537,19 @@
             games.forEach(game => {
                 const button = document.createElement('button');
                 button.className = 'game-button';
-                button.style.backgroundColor = game.color;
-                button.innerHTML = game.emoji;
+                button.dataset.gameId = game.id;
                 button.title = game.name;
                 button.onclick = () => openGame(game);
+                
+                // Check if game is completed
+                if (gameCompletionStatus[game.id] && gameCompletionStatus[game.id].completed) {
+                    button.classList.add('completed');
+                    button.style.backgroundColor = game.color;
+                    button.innerHTML = game.emoji;
+                } else {
+                    // Show logo for uncompleted games
+                    button.innerHTML = '<img src="images/logo-white.png" alt="Game">';
+                }
                 
                 gamesGrid.appendChild(button);
             });
@@ -397,8 +570,20 @@
             modalTitle.textContent = game.name;
             modal.style.display = 'block';
             
+            // Check if this is a blank game
+            if (game.file === 'games/blank.html') {
+                placeholder.style.display = 'block';
+                placeholder.innerHTML = `
+                    <h3>Your game!</h3>
+                    <p>All these games were built by first graders. If you'd like to create your own jungle game to be included on this site and help the Madre de Dios, contact natesjacobs at gmail</p>
+                `;
+                gameIframe.style.display = 'none';
+                return;
+            }
+            
             // Show placeholder while loading
             placeholder.style.display = 'block';
+            gameIframe.style.display = 'block';
             
             // Load game in iframe
             gameIframe.src = game.file;
@@ -477,42 +662,18 @@
         
         // Update game button visual status
         function updateGameButtonStatus(game, completed) {
-            const buttons = document.querySelectorAll('.game-button');
-            buttons.forEach(button => {
-                if (button.title === game.name) {
-                    if (completed) {
-                        button.style.border = '3px solid #4CAF50';
-                        button.style.position = 'relative';
-                        
-                        // Add completion checkmark
-                        let checkmark = button.querySelector('.completion-checkmark');
-                        if (!checkmark) {
-                            checkmark = document.createElement('div');
-                            checkmark.className = 'completion-checkmark';
-                            checkmark.innerHTML = '✅';
-                            checkmark.style.position = 'absolute';
-                            checkmark.style.top = '-5px';
-                            checkmark.style.right = '-5px';
-                            checkmark.style.fontSize = '20px';
-                            checkmark.style.background = 'white';
-                            checkmark.style.borderRadius = '50%';
-                            checkmark.style.width = '25px';
-                            checkmark.style.height = '25px';
-                            checkmark.style.display = 'flex';
-                            checkmark.style.alignItems = 'center';
-                            checkmark.style.justifyContent = 'center';
-                            button.appendChild(checkmark);
-                        }
-                    } else {
-                        // Remove completion styling if game was not completed
-                        button.style.border = 'none';
-                        const checkmark = button.querySelector('.completion-checkmark');
-                        if (checkmark) {
-                            checkmark.remove();
-                        }
-                    }
+            const button = document.querySelector(`[data-game-id="${game.id}"]`);
+            if (button) {
+                if (completed) {
+                    button.classList.add('completed');
+                    button.style.backgroundColor = game.color;
+                    button.innerHTML = game.emoji;
+                } else {
+                    button.classList.remove('completed');
+                    button.style.backgroundColor = '#2e5931';
+                    button.innerHTML = '<img src="images/logo-white.png" alt="Game">';
                 }
-            });
+            }
         }
         
         // Show feedback when game is completed/not completed
@@ -589,15 +750,40 @@
             contactModal.style.display = 'none';
         }
         
+        // Show video modal
+        function showVideoModal() {
+            const videoModal = document.getElementById('videoModal');
+            const youtubePlayer = document.getElementById('youtubePlayer');
+            
+            // Set the YouTube embed URL when opening modal
+            youtubePlayer.src = 'https://www.youtube.com/embed/videoseries?si=xTceWY_kA_HUi642&controls=0&list=PL_GRlghTPI8fW9Cq_pM3UJ44RBl_e7PuG';
+            
+            videoModal.style.display = 'block';
+        }
+        
+        // Close video modal
+        function closeVideoModal() {
+            const videoModal = document.getElementById('videoModal');
+            const youtubePlayer = document.getElementById('youtubePlayer');
+            
+            // Clear the iframe source to stop video playback
+            youtubePlayer.src = '';
+            
+            videoModal.style.display = 'none';
+        }
+        
         // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('gameModal');
             const contactModal = document.getElementById('contactModal');
+            const videoModal = document.getElementById('videoModal');
             
             if (event.target === modal) {
                 closeModal();
             } else if (event.target === contactModal) {
                 closeContactModal();
+            } else if (event.target === videoModal) {
+                closeVideoModal();
             }
         }
         
@@ -606,6 +792,7 @@
             if (event.key === 'Escape') {
                 closeModal();
                 closeContactModal();
+                closeVideoModal();
             }
         });
         
