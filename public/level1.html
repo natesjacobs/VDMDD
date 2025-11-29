@@ -392,6 +392,39 @@
             border: none;
         }
         
+        /* Congratulations message */
+        .congratulations {
+            display: none;
+            text-align: center;
+            color: #2e5931;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            animation: celebrate 0.6s ease-in-out;
+        }
+
+        .congratulations.show {
+            display: block;
+        }
+
+        @keyframes celebrate {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -456,7 +489,11 @@
             <div class="games-grid" id="gamesGrid">
                 <!-- Games will be dynamically generated here -->
             </div>
-            
+
+            <div class="congratulations" id="congratulationsMessage">
+                🎉 Congratulations! 🎉
+            </div>
+
             <div class="footer">
                 <p>Created with ❤️ by young forest lovers across the world.</p>
                 <div class="footer-buttons">
@@ -675,6 +712,28 @@
                     button.innerHTML = '<img src="images/logo-white.png" alt="Game">';
                 }
             }
+
+            // Check if all games are completed
+            checkAllGamesCompleted();
+        }
+
+        // Check if all games are completed and show congratulations
+        function checkAllGamesCompleted() {
+            // Get all real games (excluding the blank game with id 18)
+            const realGames = games.filter(game => game.id !== 18);
+
+            // Check if all real games are completed
+            const allCompleted = realGames.every(game =>
+                gameCompletionStatus[game.id] && gameCompletionStatus[game.id].completed
+            );
+
+            // Show or hide congratulations message
+            const congratsMessage = document.getElementById('congratulationsMessage');
+            if (allCompleted && realGames.length > 0) {
+                congratsMessage.classList.add('show');
+            } else {
+                congratsMessage.classList.remove('show');
+            }
         }
         
         // Show feedback when game is completed/not completed
@@ -800,7 +859,10 @@
         // Initialize the games on page load
         generateGames();
         loadGameCompletionStatus();
-        
+
+        // Check if all games are completed on page load
+        setTimeout(() => checkAllGamesCompleted(), 200);
+
         // Listen for messages from game iframes
         window.addEventListener('message', handleGameMessage);
     </script>
